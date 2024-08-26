@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Buy Matrix{% endblock %}
+
+{% block content %}
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{product.name}}</title>
+  <style>
+
+    .product-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+    .product-item {
+        width: 200px;
+        text-align: center;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .product-item img {
+        width: 100%;
+        height: auto;
+    }
+    .product-detail {
+        max-width: 600px;
+        margin: auto;
+    }
+</style>
+</head>
+
+<body> -->
+
+<center>
+    <div class="product-detail">
+        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+        <p><strong>{{ product.name }}</strong></p>
+        <p>{{ product.desc }}</p>
+        <p>Price:₹ {{ product.price }}</p>
+        <p>Stock: {{ product.stock }}</p>
+    </div>
+    <a href="{% url 'add_to_cart' product.id %}" onclick="add()" class="btn btn-primary">Add to Cart</a>
+    <a href="{% url 'buy_now' product.id %}" class="btn btn-primary">Buy Now</a>
+</center>
+<script>
+    function add(){
+       alert('Item added into cart');
+    }
+  </script>
+{% endblock %}

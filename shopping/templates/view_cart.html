@@ -1,0 +1,42 @@
+<!-- view_cart.html -->
+
+{% extends 'base.html' %}
+
+{% block content %}
+<center><h3 style="padding: 5px; background-color:lightskyblue;">Your Cart Items</h3></center>
+<table class="table">
+    <tr style="text-align: center;">
+        <th>Product Name</th>
+        <th>Image</th>
+        <th>Quantity</th>
+        <th>Price</th>
+        <th>Action</th>
+    </tr>
+    {% for item in cart_items %}
+    <tr style="text-align: center;">
+        <td>
+        
+            {% if item.product.name|length > 30 %}
+                    {{item.product.name|slice:":30" }}...
+            {% else %}
+                    {{ item.product.name }}
+            {% endif %}
+        </td>
+        <td><img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width: 100px; height: auto;"></td>
+        <td>{{ item.quantity }}</td>
+        <td>₹{{ item.product.price }}</td>
+        <td>
+            <a onclick="remove()" href="{% url 'remove_items' item.product.id %}">Remove</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+<h2>Total: ₹{{ total_price }}</h2>
+<script>
+    function remove(){
+       alert('Item remove from cart');
+    }
+  </script>
+{% endblock %}
+
+

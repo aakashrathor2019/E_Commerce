@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Order Successful</h2>
+  <div class="container">
+    {{order.user}}
+    <p style="background-color: yellow; width: 70px;color: black;">{{order.status}}</p>
+   <p>Your order has been placed successfully. Thank you for shopping with us!</p>
+  </div>
+  <a href="{% url 'home' %}" class="btn btn-primary">Continue Shopping</a>
+{% endblock %}

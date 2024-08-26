@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Update Profile{% endblock %}
+
+{% block content %}
+<div class="product-grid justify-content-center align-items-center">
+     <form action="{% url 'update_profile' %}" method="post"> 
+      {% csrf_token %}
+      <div class="errors" style="padding: 5px;color: red; justify-content: center;">
+        {{ error }} 
+      </div>
+        <div class="form-group">
+          <label for="username">User Name</label>
+          <input type="text" name="username" class="form-control" id="username"  value="{{ app_user.username }}">
+        </div>
+        <div class="form-group">
+          <label for="contact">Contact</label>
+          <input type="text"  name="contact" class="form-control" id="contact"  value="{{ app_user.contact }}">
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="text" name="email" class="form-control" id="email"  value="{{ app_user.email }}" readonly>
+        </div>
+        <div class="form-group">
+          <label for="address">Address</label>
+          <input type="text" name="address" class="form-control" id="address"  value="{{ app_user.address }}"  >
+        </div>
+        <div class="form-group">
+          <button id="sucess"  onclick="success()" type="submit" class="btn btn-primary pd-3">Submit</button>
+        </div>
+        
+     </form>
+</div>
+<script>
+    function success(){
+        alert('Profile Update Successfully');
+    }
+</script>
+{% endblock %}

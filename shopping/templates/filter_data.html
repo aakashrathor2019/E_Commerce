@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="row">
+    {% if filter_data %}
+      {% for product in filter_data %}
+      <div class="col-md-3 mb-4">
+        <div class="card">
+          <a href="{% url 'product_detail' product.id %}">
+            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+            <div class="card-body">
+              <h5 class="card-title">{{ product.name }}</h5>
+              <p class="card-text">{{ product.description }}</p>
+              <p class="card-text"><strong>₹ {{ product.price }}</strong></p>
+              <a href="{% url 'add_to_cart' product.id %}" class="btn btn-primary">Add to Cart</a>
+            </div>
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="col-12">
+        <div class="alert alert-danger w-50 mb-5 p-4" role="alert">
+          <center>Item not found with this {{ query }}</center>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

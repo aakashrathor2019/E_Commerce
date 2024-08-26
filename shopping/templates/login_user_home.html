@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+  <div class="product-grid">
+    {% for product in products %}
+      <div class="product-item">
+        <a href="{% url 'product_detail' product.id %}">
+          <img src="{{ product.image.url }}" alt="{{ product.name }}">
+          <div class="product-info">
+            <p class="product-name">
+              {% if product.name|length > 15 %}
+                {{ product.name|slice:":15  " }}...
+              {% else %}
+                {{ product.name }}
+              {% endif %}
+            </p>
+            <p class="product-price">₹ {{ product.price }}</p>
+          </div>
+        </a>
+        <a href="{% url 'add_to_cart' product.id %}" onclick="add()" class="btn btn-primary">Add to Cart</a>
+      </div>
+    {% endfor %}
+  </div>
+  <script>
+    function add(){
+       alert('Item added into cart');
+    }
+  </script>
+{% endblock %}

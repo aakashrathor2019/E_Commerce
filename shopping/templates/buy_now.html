@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container">
+    <h2>Buy Now</h2>
+    <div class="row">
+      <div class="col-md-6">
+        <img src="{{ product.image.url }}" class="img-fluid" alt="{{ product.name }}">
+      </div>
+      <div class="col-md-6">
+        <h3>{{ product.name }}</h3>
+        <p>{{ product.description }}</p>
+        <p><strong>Price:</strong> ₹{{ product.price }}</p>
+        <p><strong>Shipping:</strong> ₹70</p>
+        <h4>Total: ₹{{ total_amount }}</h4>
+        <button class="btn btn-success"><a href="{% url 'confirm_order' product.id %}" style="color: black;">Confirm Order</a></button>
+        <button class="btn btn-danger"><a href="{% url 'login_user_home'  %}" style="color: black;">Cancel</a></button>
+      </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
