@@ -23,6 +23,9 @@
                   <a class="nav-link" href="{% url 'view_cart'  %}"><strong>View Cart</strong></a>
                 </li> 
                 <li class="nav-item">
+                  <a class="nav-link" href="{% url 'show_order_list' %}"><strong>Order History</strong></a>
+              </li>
+                <li class="nav-item">
                     <a class="nav-link" href="{% url 'logout_view' %}"><strong>Logout</strong></a>
                 </li>
             {% else %}

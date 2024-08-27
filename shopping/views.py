@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse ,JsonResponse
 from .forms import ProductDetail, CustomLoginForm, SignUp
-from .models import Product, AppUser, Category, CartItem ,Order ,OrderItem
+from .models import Product, AppUser, Category, CartItem ,OrderItem
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -217,7 +217,7 @@ def remove_items(request, item_id):
     return redirect("view_cart")
 
 
-
+#Delete User Account
 @login_required(login_url="user_login")
 def delete_account(request):
     try:
@@ -281,67 +281,128 @@ def confirm_order(request ,product_id):
 
 #Payment Getway
 @login_required(login_url='user_login')
-def order_done(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    if request.method == 'POST':
-        try:
-            order=Order.objects.create(
-                user=request.user.appuser,
-            )
-            OrderItem.objects.create(
-                order=order,
-                product=product,
-                quantity=1,
-                price=product.price,
+def order_done(request, product_id='null'):
+    
+        if product_id !='null':
+            product = get_object_or_404(Product, id=product_id)
+            if request.method == 'POST':
+                try:
+                    shipping_amount=70
+                    OrderItem.objects.create(
+                        user=request.user.appuser,
+                        product=product,
+                        quantity=1,
+                        price=product.price,
+                    )
+                    
+                    # Create a Stripe Checkout Session
+                    session = stripe.checkout.Session.create(
+                        payment_method_types=['card'],
+                        line_items=[{
+                            'price_data': {
+                                'currency': 'inr',  # Change to 'usd' or another supported currency
+                                'product_data': {
+                                    'name': product.name,
+                                },
+                                'unit_amount': int(product.price * 100) + (shipping_amount * 100),  # Amount in cents
+                            },
+                            'quantity': 1,
+                            
+                        }],
+                        mode='payment',
+                        success_url=request.build_absolute_uri('/payment_success/'),
+                        cancel_url=request.build_absolute_uri('/payment_cancel/'),
+                    )
+                    return redirect(session.url, code=303)
+                except stripe.error.StripeError as e:
+                    return JsonResponse({'error': f'Stripe error: {str(e)}'}, status=400)
+                except Exception as e:
+                    return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
+            else:
+                return JsonResponse({'error': 'Invalid request method'}, status=405) 
+            
+        else:
+            items=CartItem.objects.filter(user=request.user.appuser)
+            if request.method == 'POST':
+                try:    
+                        line_items=[]
+                        shipping_amount=70
+                        for item in items:
+                            OrderItem.objects.create(
+                                user=request.user.appuser,
+                                product=item.product,
+                                quantity=item.quantity,
+                                price=item.product.price,
+                            )
+                        
+                            product = item.product  # Access the product through each cart item
+                            line_items.append({
+                                'price_data': {
+                                    'currency': 'inr',
+                                    'product_data': {
+                                        'name': product.name,
+                                    },
+                                    'unit_amount': int(product.price * 100)+ (shipping_amount *100),
+                                },
+                                'quantity': item.quantity,  # Assuming CartItem has a quantity field
+                            })
 
-            )
-             
-             
-            # Create a Stripe Checkout Session
-            session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[{
-                    'price_data': {
-                        'currency': 'inr',  # Change to 'usd' or another supported currency
-                        'product_data': {
-                            'name': product.name,
-                        },
-                        'unit_amount': int(product.price * 100),  # Amount in cents
-                    },
-                    'quantity': 1,
-                }],
-                mode='payment',
-                success_url=request.build_absolute_uri(f'/order_summary/{order.id}/'),
-                cancel_url=request.build_absolute_uri('/payment_cancel/'),
-            )
-            return redirect(session.url, code=303)
-        except stripe.error.StripeError as e:
-            return JsonResponse({'error': f'Stripe error: {str(e)}'}, status=400)
-        except Exception as e:
-            return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
-    return JsonResponse({'error': 'Invalid request method'}, status=405)
+                        # Create a Stripe Checkout Session with all cart items
+                        session = stripe.checkout.Session.create(
+                            payment_method_types=['card'],
+                            line_items=line_items,
+                            mode='payment',
+                            success_url=request.build_absolute_uri('/payment_success/'),
+                            cancel_url=request.build_absolute_uri('/payment_cancel/'),
+                        )
+                        return redirect(session.url, code=303)
+                except stripe.error.StripeError as e:
+                        return JsonResponse({'error': f'Stripe error: {str(e)}'}, status=400)
+                except Exception as e:
+                        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
+            else:
+                return JsonResponse({'error': 'Invalid request method'}, status=405)
+
 
 
 #Order Detail
 @login_required(login_url='user_login')
-def order_summary(request,order_id):
-    order=Order.objects.get(id=order_id,user=request.user.appuser)
-    print('Order is:',order)
-    return render(request,'order_summary.html',{'order':order})
+def order_summary(request):
+    return render(request,'order_summary.html')
 
-    
+#Payment Success
 @login_required(login_url='user_login')
 def payment_success(request):
     # Handle successful payment here, like updating order status
-    return render(request ,'order_summary.html')
+    category = Category.objects.all()
+    return render(request ,'order_summary.html',{'categories':category})
 
-
+#Payment Cancel
 @login_required(login_url='user_login')
 def payment_cancel(request):
     # Handle payment cancellation here
     return redirect('login_user_home')
 
 
+#Show Order History
+@login_required(login_url='user_login')
+def show_order_list(request):
+    app_user=request.user.appuser
+    order_details=OrderItem.objects.filter(user=app_user) 
+    print('OrderItems :',order_details)
+    category = Category.objects.all()        
+    return render(request,'show_order_list.html',{'orders':order_details,'categories':category})
+
+#Cancel Order
+@login_required(login_url='user_login')
+def cancel_order(request ,product_id):
+    order=get_object_or_404(OrderItem ,id =product_id)
+    order.delete()
+    return redirect('show_order_list')
+
+
+
+#Logout
 @login_required(login_url="user_login")
 def logout_view(request):
     logout(request)

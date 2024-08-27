@@ -1,0 +1,70 @@
+<!-- view_cart.html -->
+
+{% extends 'base.html' %}
+
+{% block content %}
+<head>
+  <style>
+    .pending{
+      background-color: red;
+      color: white;
+    }
+    .process{
+      background-color: yellow;
+      color: black;
+    }
+    .dispatch{
+      background-color: green;
+      color: black;
+    }
+  </style>
+</head>
+<center><h3 style="padding: 5px; background-color:lightskyblue;">Your Orders</h3></center>
+<table class="table">
+    <tr style="text-align: center;">
+        <th>Product Name</th>
+        <th>Image</th>
+        <th>Quantity</th>
+        <th>Price</th>
+        <th>Order Date</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+    {% for item in orders %}
+    <tr style="text-align: center;">
+        <td>
+          {% if item.product.name|length > 30 %}
+                {{item.product.name|slice:":30" }}...
+          {% else %}
+                {{ item.product.name }}
+          {% endif %} 
+        </td>
+        <td><img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width: 100px; height: auto;"></td>
+        <td>{{ item.quantity }}</td>
+        <td>₹{{ item.price }}</td>
+        <td>{{ item.created_at }}</td>
+        <td> 
+          {% if item.status == 'Pending' %}
+            <div class="pending">
+              {{item.status}}
+            </div>
+          {% elif item.status == 'Process' %}
+            <div class="process">
+              {{item.status}}
+            </div>
+          {% elif item.status == 'Dispatch' %}
+            <div class="dispatch">
+              {{item.status}}
+            </div>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'cancel_order' item.product.id %}" class="btn btn-danger">Cancel</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+ 
+{% endblock %}
+
+

@@ -27,9 +27,12 @@ urlpatterns=[
     path('buy_now/<int:product_id>/' ,views.buy_now ,name='buy_now'),
     path('confirm_order/<int:product_id>/',views.confirm_order, name='confirm_order'),
     path('order_done/<int:product_id>/',views.order_done,name='order_done'),
-    path('order_summary/<int:order_id>/',views.order_summary,name='order_summary'),
-    path('payment_success/', payment_success, name='payment_success'),
-    path('payment_cancel/', payment_cancel, name='payment_cancel'),
+    #path('order_summary/<int:order_id>/',views.order_summary,name='order_summary'),
+    path('payment_success/', views.payment_success, name='payment_success'),
+    path('payment_cancel/', views.payment_cancel, name='payment_cancel'),
+    path('show_order_list/',views.show_order_list ,name='show_order_list'),
+    path('order_using_cart/',views.order_done ,name='order_using_cart'),
+    path('cancel_order/<int:product_id>/',views.cancel_order ,name='cancel_order'),
 ]
 
 if settings.DEBUG:

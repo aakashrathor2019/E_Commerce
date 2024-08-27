@@ -41,13 +41,16 @@ class Order(models.Model):
         return f'Order {self.id} by {self.user.email}'
 
 class OrderItem(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE ,null=True)
+    created_at = models.DateTimeField(auto_now_add=True,null=True)
+    updated_at = models.DateTimeField(auto_now=True,null=True)
+    status = models.CharField(max_length=20, default="Pending",null=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='order_items')
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
-        return f'{self.quantity} x {self.product.name} for Order {self.order.id}'
+        return f'{self.quantity} x {self.product.name}'
 
 class WishlistItem(models.Model):
     user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='wishlist_items')

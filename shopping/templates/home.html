@@ -6,7 +6,6 @@
 {% block content %}
   <div class="product-grid">
     {% for product in products %}
-    {% if product.id != 10 %}
     <div class="product-item">
       
         <a href="{% url 'product_detail' product.id %}">
@@ -22,9 +21,9 @@
               <p>₹ {{ product.price }}</p>
           </div>
         </a>
-      {% endif %}
+        <a href="{% url 'add_to_cart' product.id %}" onclick="add()" class="btn btn-primary">Add to Cart</a>
     </div>
+    
     {% endfor %}
   </div>
-
 {% endblock %}

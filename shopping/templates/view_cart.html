@@ -15,7 +15,6 @@
     {% for item in cart_items %}
     <tr style="text-align: center;">
         <td>
-        
             {% if item.product.name|length > 30 %}
                     {{item.product.name|slice:":30" }}...
             {% else %}
@@ -31,7 +30,14 @@
     </tr>
     {% endfor %}
 </table>
+{% if cart_items %}
+    <form method="post" action="{% url 'order_using_cart' %}">
+        {% csrf_token %}
+        <button class="btn btn-primary" type="submit">Proceed Payment</button>
+    </form>
+{% endif %}
 <h2>Total: ₹{{ total_price }}</h2>
+
 <script>
     function remove(){
        alert('Item remove from cart');
