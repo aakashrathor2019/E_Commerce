@@ -1,23 +1,27 @@
 {% extends 'base.html' %}
 
+{% block title %}{{ category.name }}{% endblock %}
+
 {% block content %}
   <h4>Products in {{ category.name }}</h4>
-  <div class="row">
+  <div class="product-grid">
     {% for product in products %}
-    <div class="col-md-3 ">
-      <div class="card">
+      <div class="product-item">
         <a href="{% url 'product_detail' product.id %}">
-        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
-        <div class="card-body">
-        
-          <h5 class="card-title">{{ product.name }}</h5>
-          <p class="card-text">{{ product.description }}</p>
-          <p class="card-text"><strong>₹ {{ product.price }}</strong></p>
+          <img src="{{ product.image.url }}" alt="{{ product.name }}">
+          <div class="product-info">
+            <p class="product-name">
+              {% if product.name|length > 15 %}
+                {{ product.name|slice:":15  " }}...
+              {% else %}
+                {{ product.name }}
+              {% endif %}
+            </p>
+            <p class="product-price">₹ {{ product.price }}</p>
+          </div>
         </a>
-          <a href="{% url 'add_to_cart' product.id %}" class="btn btn-primary">Add to Cart</a>
-        </div>
+        <a href="{% url 'add_to_cart' product.id %}" onclick="add()" class="btn btn-primary">Add to Cart</a>
       </div>
-    </div>
     {% endfor %}
   </div>
 {% endblock %}

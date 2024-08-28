@@ -8,7 +8,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 import stripe
 from django.conf import settings
-
+from django.views import View
+from django.core.mail import send_mail
 
 
 
@@ -45,17 +46,18 @@ def signup(request):
 
             # Check if a user with this email already exists
             if AppUser.objects.filter(email=email).exists():
-                return render(
-                    request,
-                    "signup.html",
-                    {"form": form, "error": "Email already exists"},
-                )
+                return render(request, "signup.html", {"form": form, "error": "Email already exists"})
 
             user=User.objects.create(
                 username=username,
                 password=make_password(password),
                 email=email,
             )
+            subject='Welcome on shoppinglyx'
+            message=f"Hi,{user.username} thank you for joining india's best service provider group"
+            email_from=settings.EMAIL_HOST_USER
+            recepient_list=  [user.email]
+            send_mail(subject, message ,email_from ,recepient_list)
 
             # Create a new AppUser instance
             AppUser.objects.create(
@@ -65,7 +67,8 @@ def signup(request):
                 contact=contact,
                 address=address,
             )
-
+            
+ 
             return redirect("user_login")
     else:
         form = SignUp()
@@ -374,6 +377,13 @@ def order_summary(request):
 @login_required(login_url='user_login')
 def payment_success(request):
     # Handle successful payment here, like updating order status
+    app_user=request.user.appuser.email
+    print('Email :',app_user)
+    subject ='Order Successful'
+    message= '''Thank you for order please visit again..... ,have a nice day'''
+    email_from= settings.EMAIL_HOST_USER
+    recepient_list= [app_user]
+    send_mail(subject ,message ,email_from ,recepient_list)
     category = Category.objects.all()
     return render(request ,'order_summary.html',{'categories':category})
 

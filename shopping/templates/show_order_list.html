@@ -2,6 +2,8 @@
 
 {% extends 'base.html' %}
 
+{% block title %}Order History {% endblock %}
+
 {% block content %}
 <head>
   <style>
@@ -28,7 +30,7 @@
         <th>Price</th>
         <th>Order Date</th>
         <th>Status</th>
-        <th>Action</th>
+      
     </tr>
     {% for item in orders %}
     <tr style="text-align: center;">
@@ -58,9 +60,7 @@
             </div>
           {% endif %}
         </td>
-        <td>
-          <a href="{% url 'cancel_order' item.product.id %}" class="btn btn-danger">Cancel</a>
-        </td>
+        
     </tr>
     {% endfor %}
 </table>
