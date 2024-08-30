@@ -9,7 +9,9 @@ from django.contrib.auth.hashers import make_password
 import stripe
 from django.conf import settings
 from django.views import View
+from django.views.generic import TemplateView
 from django.core.mail import send_mail
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 
@@ -17,25 +19,26 @@ from django.core.mail import send_mail
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 #Home Page
-def home(request):
-    data = Product.objects.all()
-    category = Category.objects.all()
-    return render(request, "home.html", {"products": data, "categories": category})
+
+class Home(View):
+    def get(self,request):
+       data= Product.objects.all()
+       category= Category.objects.all()
+       return  render(request,'home.html',{'products':data,'categories':category})
 
 
 #Login User Page
-@login_required(login_url="user_login")
-def login_user_home(request):
-    data = Product.objects.all()
-    category = Category.objects.all()
-    return render(
-        request, "login_user_home.html", {"products": data, "categoreis": category}
-    )
+class LoginUserHome(LoginRequiredMixin,View):
+    def get(self,request):
+       data= Product.objects.all()
+       category= Category.objects.all()
+       return  render(request,'login_user_home.html',{'products':data,'categories':category})
 
 
 #Registration Form
-def signup(request):
-    if request.method == "POST":
+class Signup(View):
+
+    def post(self,request):
         form = SignUp(request.POST)
         if form.is_valid():
             username = form.cleaned_data["username"]
@@ -53,12 +56,7 @@ def signup(request):
                 password=make_password(password),
                 email=email,
             )
-            subject='Welcome on shoppinglyx'
-            message=f"Hi,{user.username} thank you for joining india's best service provider group"
-            email_from=settings.EMAIL_HOST_USER
-            recepient_list=  [user.email]
-            send_mail(subject, message ,email_from ,recepient_list)
-
+            
             # Create a new AppUser instance
             AppUser.objects.create(
                 user=user,
@@ -67,19 +65,24 @@ def signup(request):
                 contact=contact,
                 address=address,
             )
-            
+
+            subject='Welcome on shoppinglyx'
+            message=f"Hi,{user.username} thank you for joining india's best service provider group"
+            email_from=settings.EMAIL_HOST_USER
+            recepient_list=  [user.email]
+            send_mail(subject, message ,email_from ,recepient_list)
  
             return redirect("user_login")
-    else:
-        form = SignUp()
-
-    return render(request, "signup.html", {"form": form})
-
+    
+    def get(self ,request):
+        form=SignUp
+        return render(request,'signup.html',{'form':form})
 
 #Login 
-def user_login(request):
-    if request.method == "POST":
-        form = CustomLoginForm(request.POST)
+class UserLogin(View):
+
+    def post(self ,request):
+        form = CustomLoginForm()
         username = request.POST.get("username")
         password = request.POST.get("password")
         user = authenticate(request, username=username, password=password)
@@ -87,159 +90,167 @@ def user_login(request):
         if user:
             print("user authenticte successfully ")
             auth_login(request, user)
+            #Welcome message on every time when user login
+            subject='Welcome on shoppinglyx'
+            message=f"Hi {username} Welcome to shoppinglyx"
+            email_from=settings.EMAIL_HOST_USER
+            recepient_list=  [request.user.appuser.email]
+            send_mail(subject, message ,email_from ,recepient_list)
             return render(request, "login_user_home.html", {"products": data})
         else:
-            return render(
-                request, "login.html", {"form": form, "error": "Enter Correct Details"}
-            )
-    else:
+            return render(request, "login.html", {"form":form , "error": "Enter Correct Details"})
+    
+    def get(self ,request):
         form = CustomLoginForm()
         print("inside login function")
         return render(request, "login.html", {"form": form})
 
 
 #Add Product
-def add_prdouct(request):
-    if request.method == "POST":
+class AddProduct(View):
+    def post(self ,request):
         form = ProductDetail(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             return redirect("home")
 
-    else:
+    def get(self ,request):
         form = ProductDetail()
-    return render(request, "add_product.html", {"form": form})
+        return render(request, "add_product.html", {"form": form})
 
-
-def product_detail(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    category = Category.objects.all()
-    return render(request, "product_details.html", {"product": product,'categories':category})
+#Show Product with description 
+class ProductDetails(View):
+    def get(self,request,product_id):
+        product = get_object_or_404(Product, id=product_id)
+        category = Category.objects.all()
+        return render(request, "product_details.html", {"product": product,'categories':category})
 
 
 #Show Products by Category
-def product_list_by_category(request, category_id):
-    category = get_object_or_404(Category, id=category_id)
-    products = Product.objects.filter(category=category)
-    categories = Category.objects.all()
-    return render(
-        request,
-        "product_list.html",
-        {"category": category, "products": products, "categories": categories},
-    )
+class ProductListByCategory(View):
+    def get(self ,request, category_id):
+        category = get_object_or_404(Category, id=category_id)
+        products = Product.objects.filter(category=category)
+        categories = Category.objects.all()
+        return render(request,"product_list.html",{"category": category, "products": products, "categories": categories})
 
 #Show user profile
-@login_required(login_url="user_login")
-def user_profile(request):
-    try:
-        username1 = request.user.appuser
-        print("User is:", username1)
-        app_user = AppUser.objects.get(username=username1)
-        category = Category.objects.all()
-        return render(request, "user_profile.html", {"app_user": app_user ,'categories':category})
-    except:
-        return render(request, "user_profile.html", {"error": "Not Exists"})
+class UserProfile(LoginRequiredMixin,View):
+    login_url='user_login'
+    def get(self,request):
+        try:
+            username1 = request.user.appuser
+            print("User is:", username1)
+            app_user = AppUser.objects.get(username=username1)
+            category = Category.objects.all()
+            return render(request, "user_profile.html", {"app_user": app_user ,'categories':category})
+        except:
+            return render(request, "user_profile.html", {"error": "Not Exists"})
 
 #Update User Profile
-@login_required(login_url="user_login")
-def update_profile(request):
-    if request.method == "POST":
-        username = request.POST.get("username")
-        contact = request.POST.get("contact")
-        address = request.POST.get("address")
-        email = request.POST.get("email")
-        print("Email is:", email)
-        update_data = AppUser.objects.get(email=email)
-        print("Update data :", update_data)
-        update_data.username = username
-        update_data.contact = contact
-        update_data.address = address
-        update_data.save()
+class UpdateProfile(LoginRequiredMixin,View):
+        login_url='user_login'
+        def post(self,request):
+            username = request.POST.get("username")
+            contact = request.POST.get("contact")
+            address = request.POST.get("address")
+            email = request.POST.get("email")
+            print("Email is:", email)
+            update_data = AppUser.objects.get(email=email)
+            print("Update data :", update_data)
+            update_data.username = username
+            update_data.contact = contact
+            update_data.address = address
+            update_data.save()
 
-        user_model_data = User.objects.get(email=email)
-        user_model_data.username = username
-        user_model_data.save()
+            user_model_data = User.objects.get(email=email)
+            user_model_data.username = username
+            user_model_data.save()
 
-        return redirect("user_profile")
+            return redirect("user_profile")
 
-    else:
-        username = request.user
-        app_user = AppUser.objects.get(username=username)
-        category = Category.objects.all()
-        return render(request, "update_profile.html", {"app_user": app_user,'categories':category})
+        def get(self ,request):
+            username = request.user
+            app_user = AppUser.objects.get(username=username)
+            category = Category.objects.all()
+            return render(request, "update_profile.html", {"app_user": app_user,'categories':category})
 
 
 # View Cart
-@login_required(login_url="user_login")
-def view_cart(request):
-    app_user = request.user.appuser
-    print("User inside view_Cart:", app_user)   
-    cart_items = CartItem.objects.filter(user=app_user)
-    category = Category.objects.all()
-    print("Catt_Item:", cart_items)
-    total_price = sum(item.product.price * item.quantity for item in cart_items)
-    return render(request, "view_cart.html",{"cart_items": cart_items, "total_price": total_price ,'categories':category})
+class ViewCart(LoginRequiredMixin,View):
+    login_url='user_login'
+    def get(self ,request):
+        app_user = request.user.appuser
+        print("User inside view_Cart:", app_user)   
+        cart_items = CartItem.objects.filter(user=app_user)
+        category = Category.objects.all()
+        print("Catt_Item:", cart_items)
+        total_price = sum(item.product.price * item.quantity for item in cart_items)
+        return render(request, "view_cart.html",{"cart_items": cart_items, "total_price": total_price ,'categories':category})
 
 
 # Add to cart
-@login_required(login_url="user_login")
-def add_to_cart(request, product_id):
-    user = request.user
-    product = get_object_or_404(Product, id=product_id)
-    # import pdb; pdb.set_trace()
-    app_user = AppUser.objects.filter(email=user.email).first()
-    print("Product is:", product)
-    cart_item, created = CartItem.objects.get_or_create(product=product, user=app_user)
+class AddToCart(LoginRequiredMixin ,View):
+    login_url='user_login'
+    def get(self,request, product_id):
+        user = request.user
+        product = get_object_or_404(Product, id=product_id)
+        # import pdb; pdb.set_trace()
+        app_user = AppUser.objects.filter(email=user.email).first()
+        print("Product is:", product)
+        cart_item, created = CartItem.objects.get_or_create(product=product, user=app_user)
 
-    if not created:
-        cart_item.quantity += 1
-    else:
-        cart_item.quantity = 1
+        if not created:
+            cart_item.quantity += 1
+        else:
+            cart_item.quantity = 1
 
-    cart_item.save()
-    return redirect("view_cart")
+        cart_item.save()
+        return redirect("view_cart")
 
 
 # Remove Items from Cart
-@login_required(login_url="user_login")
-def remove_items(request, item_id):
-    try:
-        app_user = AppUser.objects.get(user=request.user)
-        print('APP_USER:',app_user)
-        cart_item = CartItem.objects.get(user=app_user, product_id=item_id)
-        print('CART_Item is:',cart_item)
-        cart_item.delete()
-        print('CartItem deleted successfully')  # Debugging line
-    except AppUser.DoesNotExist:
-        print('AppUser does not exist')  # Debugging line
-        return redirect("user_login")
-    except CartItem.DoesNotExist:
-        print('CartItem does not exist')  # Debugging line
+class RemoveItems(LoginRequiredMixin,View):
+    login_url='user_login'
+    def get(self,request, item_id):
+        try:
+            app_user = AppUser.objects.get(user=request.user)
+            print('APP_USER:',app_user)
+            cart_item = CartItem.objects.get(user=app_user, product_id=item_id)
+            print('CART_Item is:',cart_item)
+            cart_item.delete()
+            print('CartItem deleted successfully')  # Debugging line
+        except AppUser.DoesNotExist:
+            print('AppUser does not exist')  # Debugging line
+            return redirect("user_login")
+        except CartItem.DoesNotExist:
+            print('CartItem does not exist')  # Debugging line
+            return redirect("view_cart")
+   
         return redirect("view_cart")
-    
-    return redirect("view_cart")
 
 
 #Delete User Account
-@login_required(login_url="user_login")
-def delete_account(request):
-    try:
-        print("inside try block")
-        user = request.user
-        app_user = AppUser.objects.get(username=user)
-        user.delete()
-        app_user.delete()
-        return redirect("logout_view")
-    except AppUser.DoesNotExist:
-        print("AppUser does not exist")
-        return redirect("login_user_home")
-    except Exception as e:
-        print("An error occurred: ", e)
-        return redirect("login_user_home")
+class DeleteAccount(LoginRequiredMixin,View):
+    login_url='user_login'
+    def get(self, request):
+        try:
+            print("inside try block")
+            user = request.user
+            app_user = AppUser.objects.get(username=user)
+            user.delete()
+            app_user.delete()
+            return redirect("logout_view")
+        except AppUser.DoesNotExist:
+            print("AppUser does not exist")
+            return redirect("login_user_home")
+        except Exception as e:
+            print("An error occurred: ", e)
+            return redirect("login_user_home")
     
 #Show Products based on filter
-def show_product(request):
-    if request.method=='GET':
+class ShowProduct(View):
+    def get(self, request):
         query=request.GET.get('search')
         category = Category.objects.all()
         print('Data Filter is:',query)
@@ -251,169 +262,162 @@ def show_product(request):
     
 
 #Buy Product
-@login_required(login_url='user_login')
-def buy_now(request,product_id):
-    product =get_object_or_404(Product,id=product_id)
-    print("Product Id is:",product_id)
-    print('ProductL:',product)
-    app_user =  request.user.appuser
-    address=app_user.address
-    print('Address:',address)   
-    total_amount=product.price 
-    print('Total Amount:',total_amount)
-    shipping_amount=70
-    total_amount+= shipping_amount
-
-
-    return render(request, 'buy_now.html', {
-        'product': product,
-        'total_amount': total_amount,
-        'shipping_amount': shipping_amount,
-        'address':  address
-    })
+class BuyNow(LoginRequiredMixin,View):
+    login_url='user_login'
+    def get(self,request,product_id):
+        product =get_object_or_404(Product,id=product_id)
+        print("Product Id is:",product_id)
+        print('ProductL:',product)
+        app_user =  request.user.appuser
+        address=app_user.address
+        print('Address:',address)   
+        total_amount=product.price 
+        print('Total Amount:',total_amount)
+        shipping_amount=70
+        total_amount+= shipping_amount
+        return render(request, 'buy_now.html', {
+            'product': product,
+            'total_amount': total_amount,
+            'shipping_amount': shipping_amount,
+            'address':  address
+        })
 
 #Confirm Order
-@login_required(login_url='user_login')
-def confirm_order(request ,product_id):
-    product =get_object_or_404(Product,id=product_id)
-    total_amount=product.price 
-    print('Total Amount:',total_amount)
-    shipping_amount=70
-    total_amount+= shipping_amount
-    return render(request ,'order_done.html',{'product':product ,'total_amount':total_amount})
+class ConfirmOrder(LoginRequiredMixin,View):
+    login_url='user_login'
+    def get(self,request ,product_id):
+        product =get_object_or_404(Product,id=product_id)
+        total_amount=product.price 
+        print('Total Amount:',total_amount)
+        shipping_amount=70
+        total_amount+= shipping_amount
+        return render(request ,'order_done.html',{'product':product ,'total_amount':total_amount})
 
 #Payment Getway
-@login_required(login_url='user_login')
-def order_done(request, product_id='null'):
-    
-        if product_id !='null':
-            product = get_object_or_404(Product, id=product_id)
-            if request.method == 'POST':
-                try:
-                    shipping_amount=70
+class OrderDone(LoginRequiredMixin, View):
+    def post(self, request, product_id=None):
+        try:
+            if product_id:  # If product_id is provided
+                product = get_object_or_404(Product, id=product_id)
+                
+                shipping_amount = 70
+                OrderItem.objects.create(
+                    user=request.user.appuser,
+                    product=product,
+                    quantity=1,
+                    price=product.price,
+                )
+                
+                # Create a Stripe Checkout Session
+                session = stripe.checkout.Session.create(
+                    payment_method_types=['card'],
+                    line_items=[{
+                        'price_data': {
+                            'currency': 'inr',
+                            'product_data': {
+                                'name': product.name,
+                            },
+                            'unit_amount': int(product.price * 100) + (shipping_amount * 100),
+                        },
+                        'quantity': 1,
+                    }],
+                    mode='payment',
+                    success_url=request.build_absolute_uri('/payment_success/'),
+                    cancel_url=request.build_absolute_uri('/payment_cancel/'),
+                )
+                return redirect(session.url, code=303)
+
+            else:  # Process all cart items
+                items = CartItem.objects.filter(user=request.user.appuser)
+                line_items = []
+                shipping_amount = 70
+                for item in items:
                     OrderItem.objects.create(
                         user=request.user.appuser,
-                        product=product,
-                        quantity=1,
-                        price=product.price,
+                        product=item.product,
+                        quantity=item.quantity,
+                        price=item.product.price,
                     )
                     
-                    # Create a Stripe Checkout Session
-                    session = stripe.checkout.Session.create(
-                        payment_method_types=['card'],
-                        line_items=[{
-                            'price_data': {
-                                'currency': 'inr',  # Change to 'usd' or another supported currency
-                                'product_data': {
-                                    'name': product.name,
-                                },
-                                'unit_amount': int(product.price * 100) + (shipping_amount * 100),  # Amount in cents
+                    line_items.append({
+                        'price_data': {
+                            'currency': 'inr',
+                            'product_data': {
+                                'name': item.product.name,
                             },
-                            'quantity': 1,
-                            
-                        }],
-                        mode='payment',
-                        success_url=request.build_absolute_uri('/payment_success/'),
-                        cancel_url=request.build_absolute_uri('/payment_cancel/'),
-                    )
-                    return redirect(session.url, code=303)
-                except stripe.error.StripeError as e:
-                    return JsonResponse({'error': f'Stripe error: {str(e)}'}, status=400)
-                except Exception as e:
-                    return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
-            else:
-                return JsonResponse({'error': 'Invalid request method'}, status=405) 
-            
-        else:
-            items=CartItem.objects.filter(user=request.user.appuser)
-            if request.method == 'POST':
-                try:    
-                        line_items=[]
-                        shipping_amount=70
-                        for item in items:
-                            OrderItem.objects.create(
-                                user=request.user.appuser,
-                                product=item.product,
-                                quantity=item.quantity,
-                                price=item.product.price,
-                            )
-                        
-                            product = item.product  # Access the product through each cart item
-                            line_items.append({
-                                'price_data': {
-                                    'currency': 'inr',
-                                    'product_data': {
-                                        'name': product.name,
-                                    },
-                                    'unit_amount': int(product.price * 100)+ (shipping_amount *100),
-                                },
-                                'quantity': item.quantity,  # Assuming CartItem has a quantity field
-                            })
+                            'unit_amount': int(item.product.price * 100) + (shipping_amount * 100),
+                        },
+                        'quantity': item.quantity,
+                    })
 
-                        # Create a Stripe Checkout Session with all cart items
-                        session = stripe.checkout.Session.create(
-                            payment_method_types=['card'],
-                            line_items=line_items,
-                            mode='payment',
-                            success_url=request.build_absolute_uri('/payment_success/'),
-                            cancel_url=request.build_absolute_uri('/payment_cancel/'),
-                        )
-                        return redirect(session.url, code=303)
-                except stripe.error.StripeError as e:
-                        return JsonResponse({'error': f'Stripe error: {str(e)}'}, status=400)
-                except Exception as e:
-                        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
-            else:
-                return JsonResponse({'error': 'Invalid request method'}, status=405)
+                # Create a Stripe Checkout Session with all cart items
+                session = stripe.checkout.Session.create(
+                    payment_method_types=['card'],
+                    line_items=line_items,
+                    mode='payment',
+                    success_url=request.build_absolute_uri('/payment_success/'),
+                    cancel_url=request.build_absolute_uri('/payment_cancel/'),
+                )
+                return redirect(session.url, code=303)
 
+        except stripe.error.StripeError as e:
+            return JsonResponse({'error': f'Stripe error: {str(e)}'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
 
 
 #Order Detail
-@login_required(login_url='user_login')
-def order_summary(request):
-    return render(request,'order_summary.html')
+class OrderSummary(LoginRequiredMixin ,View):
+    login_url='user_login'
+    def get(self,request):
+        return render(request,'order_summary.html')
 
 #Payment Success
-@login_required(login_url='user_login')
-def payment_success(request):
-    # Handle successful payment here, like updating order status
-    app_user=request.user.appuser.email
-    print('Email :',app_user)
-    subject ='Order Successful'
-    message= '''Thank you for order please visit again..... ,have a nice day'''
-    email_from= settings.EMAIL_HOST_USER
-    recepient_list= [app_user]
-    send_mail(subject ,message ,email_from ,recepient_list)
-    category = Category.objects.all()
-    return render(request ,'order_summary.html',{'categories':category})
+class PaymentSuccess(LoginRequiredMixin ,View):
+    login_url='user_login'
+    def get(self,request):
+        # Handle successful payment here, like updating order status
+        app_user=request.user.appuser.email
+        print('Email :',app_user)
+        subject ='Order Successful'
+        message= '''Thank you for order please visit again..... ,have a nice day'''
+        email_from= settings.EMAIL_HOST_USER
+        recepient_list= [app_user]
+        send_mail(subject ,message ,email_from ,recepient_list)
+        category = Category.objects.all()
+        return render(request ,'order_summary.html',{'categories':category})
 
 #Payment Cancel
-@login_required(login_url='user_login')
-def payment_cancel(request):
-    # Handle payment cancellation here
-    return redirect('login_user_home')
+class PaymentCancel(LoginRequiredMixin,View):
+    login_url='user_login'
+    def get(self,request):
+        # Handle payment cancellation here
+        return redirect('login_user_home')
 
 
 #Show Order History
-@login_required(login_url='user_login')
-def show_order_list(request):
-    app_user=request.user.appuser
-    order_details=OrderItem.objects.filter(user=app_user) 
-    print('OrderItems :',order_details)
-    category = Category.objects.all()        
-    return render(request,'show_order_list.html',{'orders':order_details,'categories':category})
+class ShowOrderList(LoginRequiredMixin ,View):
+    login_url='user_login'
+    def get(self,request):
+        app_user=request.user.appuser
+        order_details=OrderItem.objects.filter(user=app_user) 
+        print('OrderItems :',order_details)
+        category = Category.objects.all()        
+        return render(request,'show_order_list.html',{'orders':order_details,'categories':category})
 
 #Cancel Order
-@login_required(login_url='user_login')
-def cancel_order(request ,product_id):
-    order=get_object_or_404(OrderItem ,id =product_id)
-    order.delete()
-    return redirect('show_order_list')
+class CancelOrder(LoginRequiredMixin ,View):
+    login_url='user_login'
+    def get(self,request ,product_id):
+        order=get_object_or_404(OrderItem ,id =product_id)
+        order.delete()
+        return redirect('show_order_list')
 
 
 
 #Logout
-@login_required(login_url="user_login")
-def logout_view(request):
-    logout(request)
-    return redirect("home")
+class Logout(LoginRequiredMixin,View):
+    login_url='user_login'
+    def get(self,request):
+        logout(request)
+        return redirect("home")
