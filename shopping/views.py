@@ -12,14 +12,13 @@ from django.views import View
 from django.views.generic import TemplateView
 from django.core.mail import send_mail
 from django.contrib.auth.mixins import LoginRequiredMixin
-
+from django.contrib import messages
 
 
 #Stripe Secert Key
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 #Home Page
-
 class Home(View):
     def get(self,request):
        data= Product.objects.all()
@@ -50,6 +49,7 @@ class Signup(View):
             # Check if a user with this email already exists
             if AppUser.objects.filter(email=email).exists():
                 return render(request, "signup.html", {"form": form, "error": "Email already exists"})
+            print('AFTER FILTER CONDITION')
 
             user=User.objects.create(
                 username=username,
@@ -65,7 +65,7 @@ class Signup(View):
                 contact=contact,
                 address=address,
             )
-
+            print('AFTER APPUser Creation')
             subject='Welcome on shoppinglyx'
             message=f"Hi,{user.username} thank you for joining india's best service provider group"
             email_from=settings.EMAIL_HOST_USER
@@ -73,7 +73,10 @@ class Signup(View):
             send_mail(subject, message ,email_from ,recepient_list)
  
             return redirect("user_login")
-    
+
+        else:
+            return render(request,'signup.html',{"form": form ,"error":'Please correct the errors below.'})
+
     def get(self ,request):
         form=SignUp
         return render(request,'signup.html',{'form':form})
