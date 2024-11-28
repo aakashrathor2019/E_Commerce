@@ -111,15 +111,41 @@ class UserLogin(View):
 
 #Add Product
 class AddProduct(View):
-    def post(self ,request):
+    def post(self, request):
         form = ProductDetail(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect("home")
+        if form.is_valid():          
+                name = form.cleaned_data['name']
+                desc = form.cleaned_data['desc']
+                price = form.cleaned_data['price']
+                stock = form.cleaned_data['stock']
+                image = form.cleaned_data['image']
+                category = form.cleaned_data['category']
+                existing_product=Product.objects.filter(name=name)
+                if existing_product:
+                    existing_product.update(
+                        stock=existing_product.first().stock + stock,
+                        desc=desc,   
+                        price=price,   
+                    )
+                     
+                else:
+                    Product.objects.create(
+                        name=name,
+                        desc=desc,
+                        price=price,
+                        stock=stock,
+                        image=image,
+                        category=category,
+                    )
+                return redirect("home")
+
+           
+        return render(request,"add_product.html",{"form":form,"error":"Invalid Data...please follow the rules"})
 
     def get(self ,request):
         form = ProductDetail()
         return render(request, "add_product.html", {"form": form})
+    
 
 #Show Product with description 
 class ProductDetails(View):
@@ -222,12 +248,12 @@ class RemoveItems(LoginRequiredMixin,View):
             cart_item = CartItem.objects.get(user=app_user, product_id=item_id)
             print('CART_Item is:',cart_item)
             cart_item.delete()
-            print('CartItem deleted successfully')  # Debugging line
+            print('CartItem deleted successfully')   
         except AppUser.DoesNotExist:
-            print('AppUser does not exist')  # Debugging line
+            print('AppUser does not exist')   
             return redirect("user_login")
         except CartItem.DoesNotExist:
-            print('CartItem does not exist')  # Debugging line
+            print('CartItem does not exist')   
             return redirect("view_cart")
    
         return redirect("view_cart")
@@ -276,25 +302,23 @@ class BuyNow(LoginRequiredMixin,View):
         print('Address:',address)   
         total_amount=product.price 
         print('Total Amount:',total_amount)
-        shipping_amount=70
-        total_amount+= shipping_amount
+         
         return render(request, 'buy_now.html', {
             'product': product,
             'total_amount': total_amount,
-            'shipping_amount': shipping_amount,
             'address':  address
         })
 
 #Confirm Order
-class ConfirmOrder(LoginRequiredMixin,View):
-    login_url='user_login'
-    def get(self,request ,product_id):
-        product =get_object_or_404(Product,id=product_id)
-        total_amount=product.price 
-        print('Total Amount:',total_amount)
-        shipping_amount=70
-        total_amount+= shipping_amount
-        return render(request ,'order_done.html',{'product':product ,'total_amount':total_amount})
+# class ConfirmOrder(LoginRequiredMixin,View):
+#     login_url='user_login'
+#     def get(self,request ,product_id):
+#         product =get_object_or_404(Product,id=product_id)
+#         total_amount=product.price 
+#         print('Total Amount:',total_amount)
+#         shipping_amount=70
+#         total_amount+= shipping_amount
+#         return render(request ,'order_done.html',{'product':product ,'total_amount':total_amount})
 
 #Payment Getway
 class OrderDone(LoginRequiredMixin, View):
@@ -302,8 +326,14 @@ class OrderDone(LoginRequiredMixin, View):
         try:
             if product_id:  # If product_id is provided
                 product = get_object_or_404(Product, id=product_id)
+                print('Product value:',product)
+
+                if product.stock < 1:
+                    return render(request,"order_done.html",{'errors': f'Insufficient stock for {product.name}.'})
                 
-                shipping_amount = 70
+                product.stock -=1
+                product.save()
+
                 OrderItem.objects.create(
                     user=request.user.appuser,
                     product=product,
@@ -320,7 +350,7 @@ class OrderDone(LoginRequiredMixin, View):
                             'product_data': {
                                 'name': product.name,
                             },
-                            'unit_amount': int(product.price * 100) + (shipping_amount * 100),
+                            'unit_amount': int(product.price * 100) ,
                         },
                         'quantity': 1,
                     }],
@@ -333,26 +363,33 @@ class OrderDone(LoginRequiredMixin, View):
             else:  # Process all cart items
                 items = CartItem.objects.filter(user=request.user.appuser)
                 line_items = []
-                shipping_amount = 70
                 for item in items:
+                    product = item.product
+
+                    if product.stock < item.quantity :
+                        return render(request,"view_cart.html",{'errors': f'Insufficient stock for {product.name}. Available: {product.stock}, Requested: {item.quantity}'})
+                    
+                    product.stock -=item.quantity
+                    product.save()
+
                     OrderItem.objects.create(
                         user=request.user.appuser,
                         product=item.product,
                         quantity=item.quantity,
                         price=item.product.price,
                     )
-                    
+                  
                     line_items.append({
                         'price_data': {
                             'currency': 'inr',
                             'product_data': {
                                 'name': item.product.name,
                             },
-                            'unit_amount': int(item.product.price * 100) + (shipping_amount * 100),
+                            'unit_amount': int(item.product.price * 100)  ,
                         },
                         'quantity': item.quantity,
                     })
-
+                items.delete()
                 # Create a Stripe Checkout Session with all cart items
                 session = stripe.checkout.Session.create(
                     payment_method_types=['card'],
@@ -364,9 +401,9 @@ class OrderDone(LoginRequiredMixin, View):
                 return redirect(session.url, code=303)
 
         except stripe.error.StripeError as e:
-            return JsonResponse({'error': f'Stripe error: {str(e)}'}, status=400)
+            return render(request,"order_done.html",{'error': f'Stripe error: {str(e)}'})
         except Exception as e:
-            return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
+            return render(request,"order_done.html",{'error': f'Error: {str(e)}'})
 
 
 #Order Detail

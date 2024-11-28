@@ -2,6 +2,9 @@
 
 {% block content %}
   <div class="container">
+    <div class="text-danger" style="color: red;">
+      {{ errors }}
+    </div>
     <h2>Buy Now</h2>
     <div class="row">
       <div class="col-md-6">
@@ -11,10 +14,14 @@
         <h3>{{ product.name }}</h3>
         <p>{{ product.description }}</p>
         <p><strong>Price:</strong> ₹{{ product.price }}</p>
-        <p><strong>Shipping:</strong> ₹70</p>
         <h4>Total: ₹{{ total_amount }}</h4>
-        <button class="btn btn-success"><a href="{% url 'confirm_order' product.id %}" style="color: black;">Confirm Order</a></button>
-        <button class="btn btn-danger"><a href="{% url 'login_user_home'  %}" style="color: black;">Cancel</a></button>
+        <form method="post" action="{% url 'order_done' product.id %}">
+          {% csrf_token %}
+          <button class="btn btn-primary" type="submit">Proceed Payment</button>
+          <button class="btn btn-danger"><a href="{% url 'login_user_home'  %}" style="color: black;">Cancel</a></button>
+        </form>
+        
+        
       </div>
       </div>
     </div>

@@ -137,3 +137,12 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'aarathor@bestpeers.com'
 EMAIL_HOST_PASSWORD = 'ycmf jvby dkxy pagw'
+
+
+#Celery(Message broker) Implementation 
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # URL for Redis
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'  # Store task results in Redis
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
