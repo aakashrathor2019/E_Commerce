@@ -21,17 +21,18 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 #Home Page
 class Home(View):
     def get(self,request):
-       data= Product.objects.all()
-       category= Category.objects.all()
-       return  render(request,'home.html',{'products':data,'categories':category})
+       data = Product.objects.all()
+       category = Category.objects.all()
+       return  render(request, 'home.html', {'products':data,'categories':category})
 
 
 #Login User Page
 class LoginUserHome(LoginRequiredMixin,View):
+    login_url = 'user_login'
     def get(self,request):
        data= Product.objects.all()
        category= Category.objects.all()
-       return  render(request,'login_user_home.html',{'products':data,'categories':category})
+       return  render(request, 'login_user_home.html', {'products':data,'categories':category})
 
 
 #Registration Form
@@ -47,39 +48,38 @@ class Signup(View):
             password = form.cleaned_data["password"]
 
             # Check if a user with this email already exists
-            if AppUser.objects.filter(email=email).exists():
+            if AppUser.objects.filter(email = email).exists():
                 return render(request, "signup.html", {"form": form, "error": "Email already exists"})
             print('AFTER FILTER CONDITION')
 
-            user=User.objects.create(
-                username=username,
-                password=make_password(password),
-                email=email,
+            user = User.objects.create(
+                username = username,
+                password = make_password(password),
+                email = email,
             )
             
             # Create a new AppUser instance
             AppUser.objects.create(
-                user=user,
-                username=username,
-                email=email,
-                contact=contact,
-                address=address,
+                user = user,
+                username = username,
+                email = email,
+                contact = contact,
+                address = address,
             )
-            print('AFTER APPUser Creation')
-            subject='Welcome on shoppinglyx'
-            message=f"Hi,{user.username} thank you for joining india's best service provider group"
-            email_from=settings.EMAIL_HOST_USER
-            recepient_list=  [user.email]
-            send_mail(subject, message ,email_from ,recepient_list)
+            subject = 'Welcome on shoppinglyx'
+            message = f"Hi,{user.username} thank you for joining india's best service provider group"
+            email_from = settings.EMAIL_HOST_USER
+            recepient_list = [user.email]
+            send_mail(subject, message, email_from ,recepient_list)
  
             return redirect("user_login")
 
         else:
-            return render(request,'signup.html',{"form": form ,"error":'Please correct the errors below.'})
+            return render(request, 'signup.html', {"form": form ,"error":'Please correct the errors below.'})
 
-    def get(self ,request):
-        form=SignUp
-        return render(request,'signup.html',{'form':form})
+    def get(self, request):
+        form = SignUp
+        return render(request, 'signup.html', {'form':form})
 
 #Login 
 class UserLogin(View):
@@ -88,25 +88,23 @@ class UserLogin(View):
         form = CustomLoginForm()
         username = request.POST.get("username")
         password = request.POST.get("password")
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, username = username, password = password)
         data = Product.objects.all()
         if user:
-            print("user authenticte successfully ")
             auth_login(request, user)
             #Welcome message on every time when user login
-            subject='Welcome on shoppinglyx'
-            message=f"Hi {username} Welcome to shoppinglyx"
-            email_from=settings.EMAIL_HOST_USER
-            recepient_list=  [request.user.appuser.email]
-            send_mail(subject, message ,email_from ,recepient_list)
+            subject = 'Welcome on shoppinglyx'
+            message = f"Hi {username} Welcome to shoppinglyx"
+            email_from = settings.EMAIL_HOST_USER
+            recepient_list = [request.user.appuser.email]
+            send_mail(subject, message , email_from , recepient_list)
             return render(request, "login_user_home.html", {"products": data})
         else:
             return render(request, "login.html", {"form":form , "error": "Enter Correct Details"})
     
     def get(self ,request):
         form = CustomLoginForm()
-        print("inside login function")
-        return render(request, "login.html", {"form": form})
+        return render(request, "login.html", {"form" : form})
 
 
 #Add Product
@@ -120,31 +118,31 @@ class AddProduct(View):
                 stock = form.cleaned_data['stock']
                 image = form.cleaned_data['image']
                 category = form.cleaned_data['category']
-                existing_product=Product.objects.filter(name=name)
+                existing_product = Product.objects.filter(name = name)
                 if existing_product:
                     existing_product.update(
-                        stock=existing_product.first().stock + stock,
-                        desc=desc,   
-                        price=price,   
+                        stock = existing_product.first().stock + stock,
+                        desc = desc,   
+                        price = price,   
                     )
                      
                 else:
                     Product.objects.create(
-                        name=name,
-                        desc=desc,
-                        price=price,
-                        stock=stock,
-                        image=image,
-                        category=category,
+                        name = name,
+                        desc = desc,
+                        price = price,
+                        stock = stock,
+                        image = image,
+                        category = category,
                     )
                 return redirect("home")
 
            
-        return render(request,"add_product.html",{"form":form,"error":"Invalid Data...please follow the rules"})
+        return render(request, "add_product.html", {"form":form,"error":"Invalid Data...please follow the rules"})
 
     def get(self ,request):
         form = ProductDetail()
-        return render(request, "add_product.html", {"form": form})
+        return render(request, "add_product.html", {"form" : form})
     
 
 #Show Product with description 
