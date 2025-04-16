@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse ,JsonResponse
+from django.http import HttpResponse, JsonResponse
 from .forms import ProductDetail, CustomLoginForm, SignUp
-from .models import Product, AppUser, Category, CartItem ,OrderItem
+from .models import Product, AppUser, Category, CartItem, OrderItem
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -20,16 +20,16 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 #Home Page
 class Home(View):
-    def get(self,request):
+    def get(self, request):
        data = Product.objects.all()
        category = Category.objects.all()
-       return  render(request, 'home.html', {'products':data,'categories':category})
+       return  render(request, 'home.html', {'products' : data,'categories':category})
 
 
 #Login User Page
-class LoginUserHome(LoginRequiredMixin,View):
+class LoginUserHome(LoginRequiredMixin, View):
     login_url = 'user_login'
-    def get(self,request):
+    def get(self, request):
        data= Product.objects.all()
        category= Category.objects.all()
        return  render(request, 'login_user_home.html', {'products':data,'categories':category})
@@ -50,8 +50,7 @@ class Signup(View):
             # Check if a user with this email already exists
             if AppUser.objects.filter(email = email).exists():
                 return render(request, "signup.html", {"form": form, "error": "Email already exists"})
-            print('AFTER FILTER CONDITION')
-
+                
             user = User.objects.create(
                 username = username,
                 password = make_password(password),
@@ -75,17 +74,18 @@ class Signup(View):
             return redirect("user_login")
 
         else:
-            return render(request, 'signup.html', {"form": form ,"error":'Please correct the errors below.'})
+            return render(request, 'signup.html', {"form": form , "error" : 'Please correct below errors'})
 
     def get(self, request):
-        form = SignUp
-        return render(request, 'signup.html', {'form':form})
+        form = SignUp()
+        return render(request, 'signup.html', {'form' : form})
+
 
 #Login 
 class UserLogin(View):
 
     def post(self ,request):
-        form = CustomLoginForm()
+        form = CustomLoginForm(request.POST)
         username = request.POST.get("username")
         password = request.POST.get("password")
         user = authenticate(request, username = username, password = password)
@@ -97,10 +97,10 @@ class UserLogin(View):
             message = f"Hi {username} Welcome to shoppinglyx"
             email_from = settings.EMAIL_HOST_USER
             recepient_list = [request.user.appuser.email]
-            send_mail(subject, message , email_from , recepient_list)
-            return render(request, "login_user_home.html", {"products": data})
+            send_mail(subject, message, email_from, recepient_list)
+            return render(request, "login_user_home.html", {"products" : data})
         else:
-            return render(request, "login.html", {"form":form , "error": "Enter Correct Details"})
+            return render(request, "login.html", {"form" : form , "error" : "Enter Correct Details"})
     
     def get(self ,request):
         form = CustomLoginForm()
@@ -138,7 +138,7 @@ class AddProduct(View):
                 return redirect("home")
 
            
-        return render(request, "add_product.html", {"form":form,"error":"Invalid Data...please follow the rules"})
+        return render(request, "add_product.html", {"form" : form, "error" : "Invalid Data...please follow the rules"})
 
     def get(self ,request):
         form = ProductDetail()
@@ -147,7 +147,7 @@ class AddProduct(View):
 
 #Show Product with description 
 class ProductDetails(View):
-    def get(self,request,product_id):
+    def get(self, request, product_id):
         product = get_object_or_404(Product, id=product_id)
         category = Category.objects.all()
         return render(request, "product_details.html", {"product": product,'categories':category})
@@ -155,24 +155,25 @@ class ProductDetails(View):
 
 #Show Products by Category
 class ProductListByCategory(View):
-    def get(self ,request, category_id):
-        category = get_object_or_404(Category, id=category_id)
-        products = Product.objects.filter(category=category)
+    def get(self, request, category_id):
+        category = get_object_or_404(Category, id = category_id)
+        products = Product.objects.filter(category = category)
         categories = Category.objects.all()
-        return render(request,"product_list.html",{"category": category, "products": products, "categories": categories})
+        return render(request, "product_list.html", {"category" : category, "products" : products, "categories" : categories})
+
 
 #Show user profile
-class UserProfile(LoginRequiredMixin,View):
-    login_url='user_login'
-    def get(self,request):
+class UserProfile(LoginRequiredMixin, View):
+    login_url = 'user_login'
+    def get(self, request):
         try:
             username1 = request.user.appuser
-            print("User is:", username1)
-            app_user = AppUser.objects.get(username=username1)
+            app_user = AppUser.objects.get(username = username1)
             category = Category.objects.all()
-            return render(request, "user_profile.html", {"app_user": app_user ,'categories':category})
+            return render(request, "user_profile.html", {"app_user" : app_user, 'categories' : category})
         except:
-            return render(request, "user_profile.html", {"error": "Not Exists"})
+            return render(request, "user_profile.html", {"error" : "Not Exists"})
+
 
 #Update User Profile
 class UpdateProfile(LoginRequiredMixin,View):
@@ -182,50 +183,44 @@ class UpdateProfile(LoginRequiredMixin,View):
             contact = request.POST.get("contact")
             address = request.POST.get("address")
             email = request.POST.get("email")
-            print("Email is:", email)
-            update_data = AppUser.objects.get(email=email)
-            print("Update data :", update_data)
+            update_data = AppUser.objects.get(email = email)
             update_data.username = username
             update_data.contact = contact
             update_data.address = address
             update_data.save()
 
-            user_model_data = User.objects.get(email=email)
+            user_model_data = User.objects.get(email = email)
             user_model_data.username = username
             user_model_data.save()
 
             return redirect("user_profile")
 
-        def get(self ,request):
+        def get(self, request):
             username = request.user
-            app_user = AppUser.objects.get(username=username)
+            app_user = AppUser.objects.get(username = username)
             category = Category.objects.all()
-            return render(request, "update_profile.html", {"app_user": app_user,'categories':category})
+            return render(request, "update_profile.html", {"app_user" : app_user, 'categories' : category})
 
 
 # View Cart
-class ViewCart(LoginRequiredMixin,View):
-    login_url='user_login'
-    def get(self ,request):
+class ViewCart(LoginRequiredMixin, View):
+    login_url = 'user_login'
+    def get(self, request):
         app_user = request.user.appuser
-        print("User inside view_Cart:", app_user)   
-        cart_items = CartItem.objects.filter(user=app_user)
+        cart_items = CartItem.objects.filter(user = app_user)
         category = Category.objects.all()
-        print("Catt_Item:", cart_items)
         total_price = sum(item.product.price * item.quantity for item in cart_items)
-        return render(request, "view_cart.html",{"cart_items": cart_items, "total_price": total_price ,'categories':category})
-
+        return render(request, "view_cart.html", {"cart_items" : cart_items, "total_price": total_price, 'categories' : category})
+ 
 
 # Add to cart
-class AddToCart(LoginRequiredMixin ,View):
+class AddToCart(LoginRequiredMixin, View):
     login_url='user_login'
-    def get(self,request, product_id):
+    def get(self, request, product_id):
         user = request.user
-        product = get_object_or_404(Product, id=product_id)
-        # import pdb; pdb.set_trace()
-        app_user = AppUser.objects.filter(email=user.email).first()
-        print("Product is:", product)
-        cart_item, created = CartItem.objects.get_or_create(product=product, user=app_user)
+        product = get_object_or_404(Product, id = product_id)
+        app_user = AppUser.objects.filter(email = user.email).first()
+        cart_item, created = CartItem.objects.get_or_create(product = product, user = app_user)
 
         if not created:
             cart_item.quantity += 1
@@ -237,74 +232,60 @@ class AddToCart(LoginRequiredMixin ,View):
 
 
 # Remove Items from Cart
-class RemoveItems(LoginRequiredMixin,View):
-    login_url='user_login'
+class RemoveItems(LoginRequiredMixin, View):
+    login_url = 'user_login'
     def get(self,request, item_id):
         try:
-            app_user = AppUser.objects.get(user=request.user)
-            print('APP_USER:',app_user)
-            cart_item = CartItem.objects.get(user=app_user, product_id=item_id)
-            print('CART_Item is:',cart_item)
+            app_user = AppUser.objects.get(user = request.user)
+            cart_item = CartItem.objects.get(user = app_user, product_id = item_id)
             cart_item.delete()
-            print('CartItem deleted successfully')   
         except AppUser.DoesNotExist:
-            print('AppUser does not exist')   
             return redirect("user_login")
         except CartItem.DoesNotExist:
-            print('CartItem does not exist')   
             return redirect("view_cart")
    
         return redirect("view_cart")
 
 
 #Delete User Account
-class DeleteAccount(LoginRequiredMixin,View):
-    login_url='user_login'
+class DeleteAccount(LoginRequiredMixin, View):
+    login_url = 'user_login'
     def get(self, request):
         try:
-            print("inside try block")
             user = request.user
-            app_user = AppUser.objects.get(username=user)
+            app_user = AppUser.objects.get(username = user)
             user.delete()
             app_user.delete()
             return redirect("logout_view")
         except AppUser.DoesNotExist:
-            print("AppUser does not exist")
             return redirect("login_user_home")
         except Exception as e:
-            print("An error occurred: ", e)
             return redirect("login_user_home")
     
 #Show Products based on filter
 class ShowProduct(View):
     def get(self, request):
-        query=request.GET.get('search')
+        query = request.GET.get('search')
         category = Category.objects.all()
-        print('Data Filter is:',query)
         if query:
-            filter_data=Product.objects.filter(name__icontains=query)
+            filter_data = Product.objects.filter(name__icontains = query)
         else:
-            filter_data=Product.objects.all()
-        return render(request ,'filter_data.html',{'filter_data':filter_data ,'query':query ,'categories':category})
+            filter_data = Product.objects.all()
+        return render(request, 'filter_data.html', {'filter_data' : filter_data, 'query' : query, 'categories' : category})
     
 
 #Buy Product
-class BuyNow(LoginRequiredMixin,View):
-    login_url='user_login'
-    def get(self,request,product_id):
-        product =get_object_or_404(Product,id=product_id)
-        print("Product Id is:",product_id)
-        print('ProductL:',product)
+class BuyNow(LoginRequiredMixin, View):
+    login_url = 'user_login'
+    def get(self, request, product_id):
+        product = get_object_or_404(Product, id = product_id)
         app_user =  request.user.appuser
-        address=app_user.address
-        print('Address:',address)   
-        total_amount=product.price 
-        print('Total Amount:',total_amount)
-         
+        address = app_user.address
+        total_amount = product.price 
         return render(request, 'buy_now.html', {
-            'product': product,
-            'total_amount': total_amount,
-            'address':  address
+            'product' : product,
+            'total_amount' : total_amount,
+            'address' :  address
         })
 
 #Confirm Order
@@ -318,34 +299,34 @@ class BuyNow(LoginRequiredMixin,View):
 #         total_amount+= shipping_amount
 #         return render(request ,'order_done.html',{'product':product ,'total_amount':total_amount})
 
+
 #Payment Getway
 class OrderDone(LoginRequiredMixin, View):
-    def post(self, request, product_id=None):
+    def post(self, request, product_id = None):
         try:
             if product_id:  # If product_id is provided
-                product = get_object_or_404(Product, id=product_id)
-                print('Product value:',product)
+                product = get_object_or_404(Product, id = product_id)
 
                 if product.stock < 1:
-                    return render(request,"order_done.html",{'errors': f'Insufficient stock for {product.name}.'})
+                    return render(request, "order_done.html", {'errors' : f'Insufficient stock for {product.name}.'})
                 
-                product.stock -=1
+                product.stock -= 1
                 product.save()
 
                 OrderItem.objects.create(
-                    user=request.user.appuser,
-                    product=product,
-                    quantity=1,
-                    price=product.price,
+                    user = request.user.appuser,
+                    product = product,
+                    quantity = 1,
+                    price = product.price,
                 )
                 
                 # Create a Stripe Checkout Session
                 session = stripe.checkout.Session.create(
-                    payment_method_types=['card'],
-                    line_items=[{
-                        'price_data': {
-                            'currency': 'inr',
-                            'product_data': {
+                    payment_method_types = ['card'],
+                    line_items = [{
+                        'price_data' : {
+                            'currency' : 'inr',
+                            'product_data' : {
                                 'name': product.name,
                             },
                             'unit_amount': int(product.price * 100) ,
@@ -353,21 +334,21 @@ class OrderDone(LoginRequiredMixin, View):
                         'quantity': 1,
                     }],
                     mode='payment',
-                    success_url=request.build_absolute_uri('/payment_success/'),
-                    cancel_url=request.build_absolute_uri('/payment_cancel/'),
+                    success_url = request.build_absolute_uri('/payment_success/'),
+                    cancel_url = request.build_absolute_uri('/payment_cancel/'),
                 )
                 return redirect(session.url, code=303)
 
             else:  # Process all cart items
-                items = CartItem.objects.filter(user=request.user.appuser)
+                items = CartItem.objects.filter(user = request.user.appuser)
                 line_items = []
                 for item in items:
                     product = item.product
 
                     if product.stock < item.quantity :
-                        return render(request,"view_cart.html",{'errors': f'Insufficient stock for {product.name}. Available: {product.stock}, Requested: {item.quantity}'})
+                        return render(request, "view_cart.html", {'errors': f'Insufficient stock for {product.name}. Available: {product.stock}, Requested: {item.quantity}'})
                     
-                    product.stock -=item.quantity
+                    product.stock -= item.quantity
                     product.save()
 
                     OrderItem.objects.create(
